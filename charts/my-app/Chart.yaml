@@ -1,0 +1,16 @@
+# Name of the chart
+name: my-app
+
+# Version of the chart
+version: 1.0.0
+
+# App dependencies (usually none for simple apps)
+dependencies: []
+
+# Description of the chart
+description: A simple Node.js application deployed on EKS
+
+# Maintainers of the chart
+maintainers:
+  - Name: Olawale Q
+    Email: wquadrillion@gmail.com

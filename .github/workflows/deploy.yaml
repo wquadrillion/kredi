@@ -1,0 +1,70 @@
+name: Deploy and Push Helm Chart
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/aws-secret-manager-caching@v2
+        with:
+          secret-id: my-aws-credentials-secret  # Replace with your secret name
+          region: us-east-1                   # Replace with your region
+
+      # Login to AWS using retrieved credentials
+      - name: Login to AWS
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region ${{ secrets.AWS_REGION }}
+
+      # Build Docker image (optional, adjust based on your needs)
+      - name: Build Docker Image
+        run: docker build -t your-username/my-app:latest .  # Replace username
+
+      # Push Docker image to ECR (optional, adjust repository name)
+      - name: Login to ECR
+        run: aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY_URI
+
+      - name: Push image to ECR
+        run: docker push $ECR_REPOSITORY_URI:latest  # Replace with your ECR URI
+
+      # Update Helm chart values if image pushed (adjust paths)
+      - name: Update Helm Chart Values (if ECR pushed)
+        run: |
+          if [[ -n "$ECR_REPOSITORY_URI" ]]; then
+            sed -i 's/image.repository:.*/image.repository: '"$ECR_REPOSITORY_URI/"' charts/my-app/values.yaml
+          fi
+
+      # Install Helm if not already present
+      - name: Install Helm (if not already installed)
+        run: curl -fsSL -o get-helm.sh https://raw.githubusercontent.com/helm/helm/v3.9.4/scripts/get-helm-3.sh && chmod +x get-helm.sh && ./get-helm.sh --no-setup
+
+      # Deploy the application using Helm
+      - name: Deploy Application
+        run: helm install my-app charts/my-app
+
+      # Package the Helm chart
+      - name: Package Helm Chart
+        run: helm package charts/my-app
+
+      # Push Helm chart to S3 bucket
+      - name: Push Helm Chart to S3
+        uses: aws-actions/aws-s3-upload@v3
+        with:
+          source: charts/my-app.tgz  # Replace with packaged chart name
+          bucket: your-s3-bucket-name  # Replace with your S3 bucket name
+          object-key: my-app-chart.tgz  # Replace with desired object key
+          region: us-east-1           # Replace with your region
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_REGION: ${{ secrets.AWS_REGION }}  # Optional, if not using caching
+

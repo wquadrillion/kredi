@@ -1,0 +1,7 @@
+# Port on which the application listens
+image: {repository: quadrillionn/my-app", tag: "latest"}
+# Replace with your actual Docker image repository and tag
+port: 3000
+# Service type (e.g., NodePort, LoadBalancer) - adjust for your needs
+service:
+  type: NodePort

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Chart.Name }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app: {{ .Chart.Name }}
+  ports:
+  - port: {{ .Values.port }}
+    targetPort: {{ .Values.port }}
+    # Define nodePort for NodePort service type
+    nodePort: {{ requiredIf .Values.service.type "eq" "NodePort" }}.
